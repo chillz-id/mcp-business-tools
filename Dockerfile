@@ -20,21 +20,10 @@ ENV PATH="/opt/venv/bin:$PATH"
 # Install Python dependencies in virtual environment
 RUN pip install uv
 
-# Install all Node.js MCP servers globally
-RUN npm install -g \
-    @modelcontextprotocol/server-notion \
-    @modelcontextprotocol/server-github \
-    @modelcontextprotocol/server-filesystem \
-    @modelcontextprotocol/server-gdrive
+# Install ONLY the MCP servers that actually exist
+# Note: Most MCP servers are still in development, so we'll start with a minimal set
 
-# Install Metricool MCP server in virtual environment
-RUN uv tool install mcp-metricool
-
-# Try to install Canva and WIX (may need different approach)
-RUN npm install -g @canva/mcp-server || echo "Canva MCP not available yet"
-RUN npm install -g @wix/mcp || echo "WIX MCP not available yet"
-
-# Copy gateway application
+# Copy gateway application first
 COPY gateway/ ./gateway/
 WORKDIR /app/gateway
 RUN npm install

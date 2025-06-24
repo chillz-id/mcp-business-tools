@@ -19,8 +19,6 @@ app.get('/health', (req, res) => {
       github: 'http://localhost:3002', 
       filesystem: 'http://localhost:3003',
       metricool: 'http://localhost:3004',
-      canva: 'http://localhost:3005',
-      wix: 'http://localhost:3006',
       gdrive: 'http://localhost:3007'
     }
   });
@@ -62,7 +60,7 @@ const createMCPProxy = (target, pathRewrite = {}) => {
   });
 };
 
-// Business Tools Routes using localhost
+// Working Business Tools Routes
 app.use('/notion', createMCPProxy('http://localhost:3001', { '^/notion': '' }));
 app.use('/github', createMCPProxy('http://localhost:3002', { '^/github': '' }));
 app.use('/filesystem', createMCPProxy('http://localhost:3003', { '^/filesystem': '' }));
@@ -70,12 +68,25 @@ app.use('/filesystem', createMCPProxy('http://localhost:3003', { '^/filesystem':
 // Analytics & Social Media
 app.use('/metricool', createMCPProxy('http://localhost:3004', { '^/metricool': '' }));
 
-// Creative Tools  
-app.use('/canva', createMCPProxy('http://localhost:3005', { '^/canva': '' }));
-app.use('/wix', createMCPProxy('http://localhost:3006', { '^/wix': '' }));
-
 // Storage & Files
 app.use('/gdrive', createMCPProxy('http://localhost:3007', { '^/gdrive': '' }));
+
+// Mock responses for unavailable services
+app.all('/canva/*', (req, res) => {
+  res.status(503).json({
+    error: 'Service Unavailable',
+    message: 'Canva MCP service is not available - package @canva/mcp-server does not exist',
+    status: 'unavailable'
+  });
+});
+
+app.all('/wix/*', (req, res) => {
+  res.status(503).json({
+    error: 'Service Unavailable', 
+    message: 'WIX MCP service is not available - package @wix/mcp does not exist',
+    status: 'unavailable'
+  });
+});
 
 // MCP Service Discovery Endpoint
 app.get('/services', (req, res) => {
@@ -84,37 +95,46 @@ app.get('/services', (req, res) => {
       notion: {
         url: '/notion',
         description: 'Notion pages and databases',
-        tools: ['create_page', 'read_page', 'update_page', 'query_database']
+        tools: ['create_page', 'read_page', 'update_page', 'query_database'],
+        status: 'available'
       },
       github: {
         url: '/github', 
         description: 'GitHub repositories and issues',
-        tools: ['create_repo', 'list_issues', 'create_pr', 'merge_pr']
+        tools: ['create_repo', 'list_issues', 'create_pr', 'merge_pr'],
+        status: 'available'
       },
       filesystem: {
         url: '/filesystem',
         description: 'File system operations', 
-        tools: ['read_file', 'write_file', 'list_directory', 'search_files']
+        tools: ['read_file', 'write_file', 'list_directory', 'search_files'],
+        status: 'available'
       },
       metricool: {
         url: '/metricool',
         description: 'Social media analytics and scheduling',
-        tools: ['get_analytics', 'schedule_post', 'get_competitors', 'get_best_time']
-      },
-      canva: {
-        url: '/canva',
-        description: 'Design and creative tools',
-        tools: ['create_design', 'export_design', 'list_templates']
-      },
-      wix: {
-        url: '/wix', 
-        description: 'Wix website management',
-        tools: ['update_site', 'get_analytics', 'manage_content']
+        tools: ['get_analytics', 'schedule_post', 'get_competitors', 'get_best_time'],
+        status: 'available'
       },
       gdrive: {
         url: '/gdrive',
         description: 'Google Drive file management', 
-        tools: ['upload_file', 'download_file', 'share_file', 'search_files']
+        tools: ['upload_file', 'download_file', 'share_file', 'search_files'],
+        status: 'available'
+      },
+      canva: {
+        url: '/canva',
+        description: 'Design and creative tools',
+        tools: ['create_design', 'export_design', 'list_templates'],
+        status: 'unavailable',
+        reason: 'Package @canva/mcp-server does not exist'
+      },
+      wix: {
+        url: '/wix', 
+        description: 'Wix website management',
+        tools: ['update_site', 'get_analytics', 'manage_content'],
+        status: 'unavailable',
+        reason: 'Package @wix/mcp does not exist'
       }
     }
   });
@@ -123,12 +143,21 @@ app.get('/services', (req, res) => {
 // Catch-all route for MCP protocol
 app.all('/:service/*', (req, res) => {
   const service = req.params.service;
-  const validServices = ['notion', 'github', 'filesystem', 'metricool', 'canva', 'wix', 'gdrive'];
+  const validServices = ['notion', 'github', 'filesystem', 'metricool', 'gdrive'];
+  const unavailableServices = ['canva', 'wix'];
+  
+  if (unavailableServices.includes(service)) {
+    return res.status(503).json({ 
+      error: 'Service Unavailable',
+      message: `${service} MCP service is not available`,
+      available_services: validServices
+    });
+  }
   
   if (!validServices.includes(service)) {
     return res.status(404).json({ 
       error: 'Service not found',
-      available_services: validServices
+      available_services: validServices.concat(unavailableServices)
     });
   }
   
@@ -149,9 +178,11 @@ app.get('/', (req, res) => {
       github: '/github/*',
       filesystem: '/filesystem/*',
       metricool: '/metricool/*',
-      canva: '/canva/*',
-      wix: '/wix/*',
       gdrive: '/gdrive/*'
+    },
+    unavailable_services: {
+      canva: '/canva/* (package does not exist)',
+      wix: '/wix/* (package does not exist)'
     }
   });
 });

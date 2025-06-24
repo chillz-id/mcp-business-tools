@@ -8,13 +8,11 @@ RUN apk add --no-cache python3 py3-pip
 # Set working directory
 WORKDIR /app
 
-# Install global npm packages for MCP servers
+# Install global npm packages for MCP servers (ONLY WORKING PACKAGES)
 RUN npm install -g \
     @modelcontextprotocol/server-notion \
     @modelcontextprotocol/server-github \
     @modelcontextprotocol/server-filesystem \
-    @canva/mcp-server \
-    @wix/mcp \
     @modelcontextprotocol/server-gdrive
 
 # Install Python MCP server

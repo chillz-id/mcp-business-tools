@@ -9,20 +9,23 @@ const PORT = process.env.PORT || 8080;
 app.use(cors());
 app.use(express.json());
 
+// Service URLs - use localhost since all services run in same container
+const serviceUrls = {
+  notion: process.env.MCP_NOTION_URL || 'http://localhost:3001',
+  github: process.env.MCP_GITHUB_URL || 'http://localhost:3002',
+  filesystem: process.env.MCP_FILESYSTEM_URL || 'http://localhost:3003',
+  metricool: process.env.MCP_METRICOOL_URL || 'http://localhost:3004',
+  canva: process.env.MCP_CANVA_URL || 'http://localhost:3005',
+  wix: process.env.MCP_WIX_URL || 'http://localhost:3006',
+  gdrive: process.env.MCP_GDRIVE_URL || 'http://localhost:3007'
+};
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({ 
     status: 'healthy', 
     timestamp: new Date().toISOString(),
-    services: {
-      notion: 'http://notion-mcp:3000',
-      github: 'http://github-mcp:3000', 
-      filesystem: 'http://filesystem-mcp:3000',
-      metricool: 'http://metricool-mcp:3000',
-      canva: 'http://canva-mcp:3000',
-      wix: 'http://wix-mcp:3000',
-      gdrive: 'http://gdrive-mcp:3000'
-    }
+    services: serviceUrls
   });
 });
 
@@ -63,19 +66,19 @@ const createMCPProxy = (target, pathRewrite = {}) => {
 };
 
 // Business Tools Routes
-app.use('/notion', createMCPProxy('http://notion-mcp:3000', { '^/notion': '' }));
-app.use('/github', createMCPProxy('http://github-mcp:3000', { '^/github': '' }));
-app.use('/filesystem', createMCPProxy('http://filesystem-mcp:3000', { '^/filesystem': '' }));
+app.use('/notion', createMCPProxy(serviceUrls.notion, { '^/notion': '' }));
+app.use('/github', createMCPProxy(serviceUrls.github, { '^/github': '' }));
+app.use('/filesystem', createMCPProxy(serviceUrls.filesystem, { '^/filesystem': '' }));
 
 // Analytics & Social Media
-app.use('/metricool', createMCPProxy('http://metricool-mcp:3000', { '^/metricool': '' }));
+app.use('/metricool', createMCPProxy(serviceUrls.metricool, { '^/metricool': '' }));
 
 // Creative Tools  
-app.use('/canva', createMCPProxy('http://canva-mcp:3000', { '^/canva': '' }));
-app.use('/wix', createMCPProxy('http://wix-mcp:3000', { '^/wix': '' }));
+app.use('/canva', createMCPProxy(serviceUrls.canva, { '^/canva': '' }));
+app.use('/wix', createMCPProxy(serviceUrls.wix, { '^/wix': '' }));
 
 // Storage & Files
-app.use('/gdrive', createMCPProxy('http://gdrive-mcp:3000', { '^/gdrive': '' }));
+app.use('/gdrive', createMCPProxy(serviceUrls.gdrive, { '^/gdrive': '' }));
 
 // MCP Service Discovery Endpoint
 app.get('/services', (req, res) => {
@@ -166,7 +169,7 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-app.listen(PORT, '0.0.0.0', () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 MCP Gateway running on port ${PORT}`);
   console.log(`📋 Health check: http://localhost:${PORT}/health`);
   console.log(`🔧 Services: http://localhost:${PORT}/services`);

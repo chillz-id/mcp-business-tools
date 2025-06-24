@@ -1,0 +1,36 @@
+# Railway-compatible MCP Business Tools
+# Single container with all MCP services running internally
+FROM node:18-alpine
+
+# Install Python for Metricool MCP
+RUN apk add --no-cache python3 py3-pip
+
+# Set working directory
+WORKDIR /app
+
+# Install global npm packages for MCP servers
+RUN npm install -g \
+    @modelcontextprotocol/server-notion \
+    @modelcontextprotocol/server-github \
+    @modelcontextprotocol/server-filesystem \
+    @canva/mcp-server \
+    @wix/mcp \
+    @modelcontextprotocol/server-gdrive
+
+# Install Python MCP server
+RUN pip install uv && uv tool install mcp-metricool
+
+# Copy gateway application
+COPY gateway/ ./gateway/
+COPY start-railway.sh ./
+RUN chmod +x start-railway.sh
+
+# Create a simplified startup script for Railway
+WORKDIR /app/gateway
+RUN npm install
+
+# Expose the gateway port
+EXPOSE 8080
+
+# Start all services using a custom script
+CMD ["/app/start-railway.sh"]

@@ -16,12 +16,6 @@ PORT=3003 npx @modelcontextprotocol/server-filesystem &
 echo "📊 Starting Metricool MCP server on port 3004..."
 PORT=3004 METRICOOL_USER_TOKEN="$METRICOOL_USER_TOKEN" METRICOOL_USER_ID="$METRICOOL_USER_ID" /root/.local/bin/mcp-metricool &
 
-echo "🎨 Starting Canva MCP server on port 3005..."
-PORT=3005 CANVA_CLIENT_ID="$CANVA_CLIENT_ID" CANVA_CLIENT_SECRET="$CANVA_CLIENT_SECRET" npx @canva/mcp-server &
-
-echo "🌐 Starting WIX MCP server on port 3006..."
-PORT=3006 WIX_API_KEY="$WIX_API_KEY" npx @wix/mcp &
-
 echo "💾 Starting Google Drive MCP server on port 3007..."
 PORT=3007 GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID" GOOGLE_CLIENT_SECRET="$GOOGLE_CLIENT_SECRET" GOOGLE_REFRESH_TOKEN="$GOOGLE_REFRESH_TOKEN" npx @modelcontextprotocol/server-gdrive &
 

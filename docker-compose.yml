@@ -1,0 +1,155 @@
+version: '3.8'
+
+services:
+  # Core Business Tools
+  notion-mcp:
+    image: node:18-alpine
+    command: >
+      sh -c "npm install -g @modelcontextprotocol/server-notion && 
+             npx @modelcontextprotocol/server-notion"
+    environment:
+      - NOTION_API_KEY=${NOTION_API_KEY}
+    ports:
+      - "3001:3000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  github-mcp:
+    image: node:18-alpine
+    command: >
+      sh -c "npm install -g @modelcontextprotocol/server-github && 
+             npx @modelcontextprotocol/server-github"
+    environment:
+      - GITHUB_PERSONAL_ACCESS_TOKEN=${GITHUB_PERSONAL_ACCESS_TOKEN}
+    ports:
+      - "3002:3000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  filesystem-mcp:
+    image: node:18-alpine
+    command: >
+      sh -c "npm install -g @modelcontextprotocol/server-filesystem && 
+             npx @modelcontextprotocol/server-filesystem"
+    ports:
+      - "3003:3000"
+    restart: unless-stopped
+    volumes:
+      - mcp_storage:/app/storage
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Analytics & Social Media
+  metricool-mcp:
+    image: python:3.11-alpine
+    command: >
+      sh -c "pip install uv && 
+             uvx mcp-metricool"
+    environment:
+      - METRICOOL_USER_TOKEN=${METRICOOL_USER_TOKEN}
+      - METRICOOL_USER_ID=${METRICOOL_USER_ID}
+    ports:
+      - "3004:3000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Creative Tools
+  canva-mcp:
+    image: node:18-alpine
+    command: >
+      sh -c "npm install -g @canva/mcp-server && 
+             npx @canva/mcp-server"
+    environment:
+      - CANVA_CLIENT_ID=${CANVA_CLIENT_ID}
+      - CANVA_CLIENT_SECRET=${CANVA_CLIENT_SECRET}
+    ports:
+      - "3005:3000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  wix-mcp:
+    image: node:18-alpine
+    command: >
+      sh -c "npm install -g @wix/mcp && 
+             npx @wix/mcp"
+    environment:
+      - WIX_API_KEY=${WIX_API_KEY}
+    ports:
+      - "3006:3000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Storage & Files  
+  gdrive-mcp:
+    image: node:18-alpine
+    command: >
+      sh -c "npm install -g @modelcontextprotocol/server-gdrive && 
+             npx @modelcontextprotocol/server-gdrive"
+    environment:
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - GOOGLE_REFRESH_TOKEN=${GOOGLE_REFRESH_TOKEN}
+    ports:
+      - "3007:3000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # MCP Gateway/Router
+  mcp-gateway:
+    build: 
+      context: ./gateway
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - NODE_ENV=production
+      - N8N_COMMUNITY_PACKAGES_ALLOW_TOOL_USAGE=true
+    depends_on:
+      - notion-mcp
+      - github-mcp
+      - filesystem-mcp
+      - metricool-mcp
+      - canva-mcp
+      - wix-mcp
+      - gdrive-mcp
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  mcp_storage:
+    driver: local
+
+networks:
+  default:
+    driver: bridge

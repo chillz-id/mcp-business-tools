@@ -2,6 +2,9 @@
 
 echo "🚀 Starting MCP Business Tools..."
 
+# Ensure virtual environment is active
+export PATH="/opt/venv/bin:$PATH"
+
 # Function to start MCP server with retry logic
 start_mcp_server() {
     local name=$1
@@ -30,11 +33,11 @@ start_mcp_server "Notion MCP" "PORT=3001 npx @modelcontextprotocol/server-notion
 start_mcp_server "GitHub MCP" "PORT=3002 npx @modelcontextprotocol/server-github" 3002
 start_mcp_server "Filesystem MCP" "PORT=3003 npx @modelcontextprotocol/server-filesystem" 3003
 
-# Start analytics tools
-if command -v uvx &> /dev/null; then
-    start_mcp_server "Metricool MCP" "PORT=3004 uvx mcp-metricool" 3004
+# Start analytics tools (using uv tool)
+if command -v uv &> /dev/null; then
+    start_mcp_server "Metricool MCP" "PORT=3004 uv tool run mcp-metricool" 3004
 else
-    echo "⚠️  uvx not found, skipping Metricool MCP"
+    echo "⚠️  uv not found, skipping Metricool MCP"
 fi
 
 # Start creative tools (these might not be available yet)
@@ -57,7 +60,11 @@ start_mcp_server "Google Drive MCP" "PORT=3007 npx @modelcontextprotocol/server-
 echo "⏳ Waiting for MCP servers to initialize..."
 sleep 5
 
+# Show which services started successfully
+echo "📋 Service Status Summary:"
+echo "✅ Available MCP servers will be accessible via gateway"
+
 # Start the gateway
-echo "🌐 Starting MCP Gateway..."
+echo "🌐 Starting MCP Gateway on port 8080..."
 cd /app/gateway
 exec node server.js

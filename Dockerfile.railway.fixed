@@ -1,0 +1,34 @@
+# Railway-compatible MCP Business Tools - FIXED VERSION
+# Single container with all MCP services running internally
+FROM node:18-alpine
+
+# Install Python for Metricool MCP and netcat for health checks
+RUN apk add --no-cache python3 py3-pip netcat-openbsd
+
+# Set working directory
+WORKDIR /app
+
+# Install global npm packages for MCP servers (ONLY WORKING PACKAGES)
+RUN npm install -g \
+    @modelcontextprotocol/server-notion \
+    @modelcontextprotocol/server-github \
+    @modelcontextprotocol/server-filesystem \
+    @modelcontextprotocol/server-gdrive
+
+# Install Python MCP server
+RUN pip install uv && uv tool install mcp-metricool
+
+# Copy gateway application and fixed scripts
+COPY gateway/ ./gateway/
+COPY start-railway-fixed.sh ./start-railway.sh
+RUN chmod +x start-railway.sh
+
+# Create a simplified startup script for Railway
+WORKDIR /app/gateway
+RUN npm install
+
+# Expose the gateway port (Railway will assign actual port via $PORT env var)
+EXPOSE $PORT
+
+# Start all services using the FIXED script
+CMD ["/app/start-railway.sh"]
